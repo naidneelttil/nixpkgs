@@ -26,10 +26,18 @@ stdenv.mkDerivation rec {
 
   ];
 
-  makeFlags = [ "PREFIX=$(out)" ];
+ # makeFlags = [ "PREFIX=$(out)" ];
+
+  postPatch = ''
+
+     pushd sys/unix/hints
+     sed -i 's/PREFIX=$(wildcard ~)/PREFIX=$out/g' linux
+     popd
+ '';
 
   configurePhase = ''
      pushd sys/unix
+     cat hints/linux
      sh setup.sh hints/linux
      popd
   '';
@@ -40,11 +48,15 @@ stdenv.mkDerivation rec {
 #  '';
 
   installPhase = ''
-    ls $out/
+    ls
+    ls ./..
+    ls /../..
     mkdir -p $out/bin
-    cp ~/games/evilhack $out/bin
-    cp -r ~/games/evilhackdir $out/bin
+    mkdir -p $out/games
+    find $out/games/evilhack
+    find $out/games/evilhackdir
 
+    cp $out/games/evilhack $/out/bin
     chmod +x $out/bin/evilhack
   '';
 }
