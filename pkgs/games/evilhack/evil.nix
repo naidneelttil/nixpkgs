@@ -1,7 +1,8 @@
 
 
 
-{ stdenv, lib, fetchFromGitHub, ncurses, flex, bison, gcc, gdb}:
+{ stdenv, lib, fetchFromGitHub, ncurses, flex, bison, gcc, gdb, groff, util-linux}:
+
 
 stdenv.mkDerivation rec {
   pname = "evilhack";
@@ -18,45 +19,47 @@ stdenv.mkDerivation rec {
 
   buildInputs = [
      ncurses
+     gdb
   ];
 
   nativeBuildInputs = [
      flex
      bison
-
+     gcc
+     groff
+     util-linux
   ];
 
- # makeFlags = [ "PREFIX=$(out)" ];
+ #makeFlags = [ "PREFIX=$(out)" ];
+ # sed -i 's\HACKDIR=$(PREFIX)/games/$(GAME)dir\HACKDIR=$(PREFIX)/$(GAME)dir\g' linux
 
-  postPatch = ''
+#    pushd sys/unix/hints
+#     sed -i 's/PREFIX=$(wildcard ~)/PREFIX=''${out}/g' linux
+#     popd
 
-     pushd sys/unix/hints
-     sed -i 's/PREFIX=$(wildcard ~)/PREFIX=$out/g' linux
-     popd
- '';
+ postPatch = ''
+
+     substituteInPlace sys/unix/hints/linux \
+        --replace "PREFIX=\$(wildcard ~)" "PREFIX=$out"
+  '';
 
   configurePhase = ''
      pushd sys/unix
      cat hints/linux
+     echo "this is the real output of hints"
      sh setup.sh hints/linux
      popd
   '';
 
 
-#  buildPhase = ''
-#    gcc program.c -o myprogram
-#  '';
 
-  installPhase = ''
-    ls
-    ls ./..
-    ls /../..
+  buildPhase = ''
+    make all
+    make install
     mkdir -p $out/bin
     mkdir -p $out/games
-    find $out/games/evilhack
-    find $out/games/evilhackdir
+    mv $out/games/evilhack $out/bin/
 
-    cp $out/games/evilhack $/out/bin
     chmod +x $out/bin/evilhack
   '';
 }
