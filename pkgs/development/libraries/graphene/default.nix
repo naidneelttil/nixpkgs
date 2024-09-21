@@ -11,7 +11,7 @@
 , mutest
 , nixosTests
 , glib
-, withDocumentation ? !stdenv.hostPlatform.isStatic
+, withDocumentation ? stdenv.buildPlatform.canExecute stdenv.hostPlatform || stdenv.hostPlatform.emulatorAvailable buildPackages
 , gtk-doc
 , docbook_xsl
 , docbook_xml_dtd_43
@@ -19,9 +19,10 @@
 , gobject-introspection
 , withIntrospection ? lib.meta.availableOn stdenv.hostPlatform gobject-introspection && stdenv.hostPlatform.emulatorAvailable buildPackages
 , makeWrapper
+, testers
 }:
 
-stdenv.mkDerivation rec {
+stdenv.mkDerivation (finalAttrs: {
   pname = "graphene";
   version = "1.10.8";
 
@@ -31,8 +32,8 @@ stdenv.mkDerivation rec {
 
   src = fetchFromGitHub {
     owner = "ebassi";
-    repo = pname;
-    rev = version;
+    repo = "graphene";
+    rev = finalAttrs.version;
     sha256 = "P6JQhSktzvyMHatP/iojNGXPmcsxsFxdYerXzS23ojI=";
   };
 
@@ -64,10 +65,10 @@ stdenv.mkDerivation rec {
     docbook_xml_dtd_43
     docbook_xsl
     gtk-doc
+  ] ++ lib.optionals (withDocumentation && !stdenv.buildPlatform.canExecute stdenv.hostPlatform) [
+    mesonEmulatorHook
   ] ++ lib.optionals withIntrospection [
     gobject-introspection
-  ] ++ lib.optionals (!stdenv.buildPlatform.canExecute stdenv.hostPlatform) [
-    mesonEmulatorHook
   ];
 
   buildInputs = [
@@ -102,23 +103,27 @@ stdenv.mkDerivation rec {
   in lib.optionalString withIntrospection ''
     if [ -x '${introspectionPy}' ] ; then
       wrapProgram '${introspectionPy}' \
-        --prefix GI_TYPELIB_PATH : "$out/lib/girepository-1.0"
+        --prefix GI_TYPELIB_PATH : "${lib.makeSearchPath "lib/girepository-1.0" [ glib.out (placeholder "out") ]}"
     fi
   '';
 
   passthru = {
     tests = {
       installedTests = nixosTests.installed-tests.graphene;
+      pkg-config = testers.hasPkgConfigModules {
+        package = finalAttrs.finalPackage;
+      };
     };
 
     updateScript = nix-update-script { };
   };
 
   meta = with lib; {
-    description = "A thin layer of graphic data types";
+    description = "Thin layer of graphic data types";
     homepage = "https://github.com/ebassi/graphene";
     license = licenses.mit;
     maintainers = teams.gnome.members ++ (with maintainers; [ ]);
     platforms = platforms.unix;
+    pkgConfigModules = [ "graphene-1.0" "graphene-gobject-1.0" ];
   };
-}
+})

@@ -3,16 +3,17 @@
 
 rustPlatform.buildRustPackage rec {
   pname = "elan";
-  version = "3.1.0";
+  version = "3.1.1-unstable-2024-08-02";
 
   src = fetchFromGitHub {
     owner = "leanprover";
     repo = "elan";
-    rev = "v${version}";
-    hash = "sha256-IC/xb4tZer2cbwIusdCwXxJS3K7kN/XFoU4mxKW4dVc=";
+    # commit "chore: update to build with rust 1.80 (leanprover/elan#134)"
+    rev = "97ce78e0e6aecdf3e8d35dbf42b0614302efb250";
+    hash = "sha256-7cwpHMyhpTxYXjZM4xbDK+epvA2kBf7jelvMaPGP1kU=";
   };
 
-  cargoHash = "sha256-F80iiXb0UpV+N9q7Msef6/Uzas1DGjMKPWuOKrk8tqU=";
+  cargoHash = "sha256-ON5d7ryMKEhkx6dV760msr+y/+4hIwssXUE5Ocaq2W0=";
 
   nativeBuildInputs = [ pkg-config makeWrapper ];
 
